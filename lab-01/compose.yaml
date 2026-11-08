@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: catshop
+      POSTGRES_USER: catuser
+      POSTGRES_PASSWORD: catpassword
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U catuser -d catshop"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql://catuser:catpassword@db:5432/catshop
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:

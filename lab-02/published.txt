@@ -1,0 +1,1 @@
+ghcr.io/alienmasterr/marsik-shop@sha256:43993514245110d095ad395f57901561b90eb1135e789cea12086a2fca2d7f32

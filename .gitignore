@@ -5,3 +5,7 @@ __pycache__/
 data/
 *.dump
 .DS_Store
+.env
+.venv/
+__pycache__/
+data/

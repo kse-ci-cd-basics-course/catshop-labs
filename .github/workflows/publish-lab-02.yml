@@ -1,0 +1,62 @@
+name: publish-lab-02
+on:
+  push:
+    branches: [lab-02]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab-02
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('lab-02/requirements.txt', 'lab-02/requirements-dev.txt') }}
+          restore-keys: pip-${{ runner.os }}-
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: python -m pytest tests -q
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/alienmasterr/marsik-shop
+            alienmasterr/marsik-shop
+          tags: type=sha,format=long
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: lab-02
+          file: lab-02/Dockerfile
+          push: true
+          provenance: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Print immutable reference
+        run: echo "ghcr.io/alienmasterr/marsik-shop@${{ steps.build.outputs.digest }}" | tee -a "$GITHUB_STEP_SUMMARY"
